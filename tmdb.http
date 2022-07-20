@@ -1,0 +1,1 @@
+get https://api.themoviedb.org/3/search/movie?api_key=5417af578f487448df0d4932bc0cc1a5&query=the+avengers
