@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const Crawler = require('crawler');
 const fetch = (...args) => import('node-fetch')
 	.then(({default: fetch}) => fetch(...args));
-
+const fs = require('fs');
 const app = express()
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json())
@@ -25,7 +25,6 @@ app.get('/', (req, res) => {
     // This will be called for each crawled page
     async callback (error, resp, done) {
       if (error) {
-        console.log(error);
       } else {
         const { $ } = resp;           
           const response = $('a:contains("Assistir")');
@@ -40,40 +39,55 @@ app.get('/', (req, res) => {
           }                
             const secondPageData = [];
             let count = 0
-            const dataSlice = firstPageData.slice(0,10)
-            function add(){
-              count++
-            }
+            const dataSlice = firstPageData.slice(0,2000)
+            
             for (let j = 0; j < dataSlice.length; j++) {
               const {url, name} = firstPageData[j]
               const c =  new Crawler({
                 maxConnections: 5,
-                async callback(error, resp, done) {                  
-                  if (error) {
-                    console.log(error);
+                async callback(error, resp, done) {  
+                  count++                
+                  if (error) {                 
                   } else {
                     const { $ } = resp;
-                    const response = $('iframe')[0].attribs.src;
-                    if(response){
-                      const [one,two] = response.split(".php")
-                      const info = await RequestInfo({ name, type , add})
+                    const response = $('iframe')
+                    if(response && response[0] && response[0].attribs && response[0].attribs.src){                      
+                      const [one,two] = response[0].attribs.src.split(".php")                 
                       secondPageData.push(
-                        {...info ,
-                        url: BASE_URL+one+"hlb"+".php"+two
+                        {name ,
+                        url: one+"hlb"+".php"+two
                       })
                     }
                    }                   
-                   if(count === dataSlice.length){                   
-                    res.status(200).json(secondPageData)
-                    console.log('firstPageData ', firstPageData.length)
-                    console.log('secondPageData ', secondPageData)
-                    done()
+                   if(count === dataSlice.length){
+                    count=0
+                      const result = []
+                      for (let k = 0; k < secondPageData.length; k++) {                        
+                        const {url, name} = secondPageData[k]
+                        const api_key = "5417af578f487448df0d4932bc0cc1a5"
+                        const query = name.split(" ").join("+")
+                        const pull = fetch(`https://api.themoviedb.org/3/search/movie?api_key=${api_key}&query=${query}&language=pt-BR`)
+                        .then(data=>data.json()).then(data=>{
+                          count++
+                          
+                          if(data.results.length > 0){
+                            const [info] = data.results                            
+                            result.push({...info,url,title_redecanais:name})
+                            if(count === secondPageData.length){
+                              fs.writeFileSync("data.json", JSON.stringify(result))
+                              console.log(result.length)
+                              res.status(200).json(result)
+                              done()
+                            }
+                          }                          
+                        })                    
+                      }
                   }
-                }                       
+                }
                 })
             c.queue(`${BASE_URL}${url}`);
-          }         
-       }     
+          }
+       }
       }      
     })
     c.queue(`${BASE_URL}/mapafilmes.html`);
@@ -83,8 +97,3 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port: ${port}`)
 })
-
-
-async function RequestInfo({ name, type , add}) {
- 
-}
