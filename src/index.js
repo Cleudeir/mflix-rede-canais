@@ -11,7 +11,7 @@ app.use(express.json())
 const port = process.env.PORT || 3333
 const baseUrl = "https://redecanais.to";
 
-app.get('/', (req, res) => {
+app.get('/start', (req, res) => {
   const c = new Crawler({
     maxConnections: 5,
     callback (error, resp, done) {    
@@ -29,6 +29,10 @@ app.get('/', (req, res) => {
     }
 
   });
+  app.get('/data', (req, res) => {
+      const result = require('../data.json') || {}
+      res.status(200).json(result)
+    });
 
 app.listen(port, () => {
   console.log(`Example app listening on port: ${port}`)
