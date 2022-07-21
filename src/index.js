@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const Crawler = require('crawler');
 const pageOne = require('./pages/pageOne');
 const app = express()
+const fs = require('fs');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json())
@@ -13,14 +14,17 @@ const baseUrl = "https://redecanais.to";
 app.get('/', (req, res) => {
   const c = new Crawler({
     maxConnections: 5,
-    callback (error, resp, done) {     
+    callback (error, resp, done) {    
+        if(error){
+          return null
+        } 
         pageOne({baseUrl,resp,send})
-       }
+      }
     })
     c.queue(`${baseUrl}/mapafilmes.html`);
 
     function send(result){
-      console.log(result)
+      fs.writeFileSync("data.json", JSON.stringify(result))
       res.status(200).json(result)
     }
 
