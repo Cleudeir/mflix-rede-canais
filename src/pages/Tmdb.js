@@ -17,7 +17,9 @@ const Tmdb = async function ({dataTwo,send}){
             count++
             console.log(count,dataTwo.length)            
             if(data.results.length > 0){
-                const [info] = data.results                            
+                const [info] = data.results
+                const {poster_path} = info
+                if(poster_path)                           
                 result.push({...info,url,title_redecanais:name})
                 if(count === dataTwo.length){
                     send(result)
